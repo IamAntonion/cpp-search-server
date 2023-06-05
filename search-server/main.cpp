@@ -99,9 +99,7 @@ public:
     }
     
     vector<Document> FindTopDocuments(const string& raw_query, DocumentStatus status) const {
-        auto result = FindTopDocuments(raw_query, [status] (int document_id, const DocumentStatus& doc_status, int rating) {
-            document_id = document_id;
-            rating = rating;
+        auto result = FindTopDocuments(raw_query, [status] ([[maybe_unused]] int document_id, const DocumentStatus& doc_status, [[maybe_unused]] int rating) {
             return status == doc_status;
         });
         return result;
