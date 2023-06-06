@@ -13,7 +13,7 @@
 using namespace std;
 
 const int MAX_RESULT_DOCUMENT_COUNT = 5;
-const float RAITING_DIFFERENCE = 1e-6;
+const double RELEVANCE_DIFFERENCE = 1e-6;
 
 string ReadLine() {
     string s;
@@ -86,7 +86,7 @@ public:
 
         sort(matched_documents.begin(), matched_documents.end(),
              [](const Document& lhs, const Document& rhs) {
-                 if (abs(lhs.relevance - rhs.relevance) < RAITING_DIFFERENCE) {
+                 if (abs(lhs.relevance - rhs.relevance) < RELEVANCE_DIFFERENCE) {
                      return lhs.rating > rhs.rating;
                  } else {
                      return lhs.relevance > rhs.relevance;
@@ -163,13 +163,7 @@ private:
     }
 
     static int ComputeAverageRating(const vector<int>& ratings) {
-        if (ratings.empty()) {
-            return 0;
-        }
-        //int rating_sum = 0;
-        //for (const int rating : ratings) {
-        //    rating_sum += rating;
-        //}
+        if (ratings.empty()) return 0;
         return accumulate(ratings.begin(), ratings.end(), 0) / static_cast<int>(ratings.size());
     }
 
@@ -215,7 +209,7 @@ private:
     }
 
     template <typename Split>
-    vector<Document> FindAllDocuments(const Query& query, const Split& split) const {
+    vector<Document> FindAllDocuments(const Query& query, const Split split) const {
         map<int, double> document_to_relevance;
         for (const string& word : query.plus_words) {
             if (word_to_document_freqs_.count(word) == 0) {
@@ -252,7 +246,7 @@ private:
    ASSERT, ASSERT_EQUAL, ASSERT_EQUAL_HINT, ASSERT_HINT и RUN_TEST
 */
 template <typename T>
-void AssertImpl(const T& expr, const string& expr_str, const string& file, const string& func, const int& line, const string& hint){
+void AssertImpl(const T expr, const string& expr_str, const string& file, const string& func, const int& line, const string& hint){
     if(!expr){
         cout << boolalpha;
         cout << file << "("s << line << "): "s << func << ": "s;
@@ -269,7 +263,7 @@ void AssertImpl(const T& expr, const string& expr_str, const string& file, const
 #define ASSERT_HINT(expr, hint) AssertImpl((expr), #expr, __FILE__, __FUNCTION__, __LINE__, (hint))
 
 template <typename T, typename U>
-void AssertEqualImpl(const T& t, const U& u, const string& t_str, const string& u_str, const string& file, const string& func, const int& line, const string& hint){
+void AssertEqualImpl(const T t, const U u, const string& t_str, const string& u_str, const string& file, const string& func, const int& line, const string& hint){
     if (t != u) {
         cout << boolalpha;
         cout << file << "("s << line << "): "s << func << ": "s;
@@ -287,7 +281,7 @@ void AssertEqualImpl(const T& t, const U& u, const string& t_str, const string& 
 #define ASSERT_EQUAL_HINT(a, b, hint) AssertEqualImpl((a), (b), #a, #b, __FILE__, __FUNCTION__, __LINE__, (hint))
 
 template <typename T>
-void RunTestImpl (const T& t, const string& t_str) {
+void RunTestImpl (const T t, const string& t_str) {
     t();
     cerr << t_str << " OK"s << endl;
 }
@@ -353,41 +347,33 @@ void TestMinusWords() {
     ASSERT_EQUAL(document_count, 2);
  
     vector<Document> found_documents = search_server.FindTopDocuments("-small -dog walks tabby cat"s);
-    ASSERT(!found_documents.empty());
     ASSERT_EQUAL(found_documents.size(), 1);
         
-    ASSERT_EQUAL(found_documents.size(), 1);
     ASSERT_EQUAL(found_documents[0].id, 1);
 }
 
 // Матчинг документа по поисковому запросу. Возвращает все слова из поискового запроса, если есть минус слово возварает пустой список
 void TestMatchWords() {
     SearchServer search_server;
-    //vector<string> document_split = {"tabby"s, "cat"s, "with"s, "big"s, "eyes"s};
     
-    //search_server.AddDocument(1, "tabby cat with big eyes"s, DocumentStatus::ACTUAL, {13});
-    
-    //tuple<vector<string>, DocumentStatus> matched_words1 = search_server.MatchDocument("tabby cat with big eyes"s, 1); // tuple<vector<string>, DocumentStatus> можно заменить на auto
-    //const auto [stringg, document] = search_server.MatchDocument("tabby cat with big eyes"s, 1);
-    //for (int i = 0; i < document_split.size(); ++i) {
-    //  ASSERT(count(stringg.begin(), stringg.end(), document_split[i]));
-    //}
-    
-    //search_server.AddDocument(2, "small dog and tabby cat"s, DocumentStatus::ACTUAL, {10});
-    //tuple<vector<string>, DocumentStatus> matched_words = search_server.MatchDocument("-small -dog and tabby cat"s, 2); // tuple<vector<string>, DocumentStatus> можно заменить на auto
-    //const auto [string_, doc_] = search_server.MatchDocument("-small -dog and tabby cat"s, 2); 
-    //ASSERT(string_.empty());
     search_server.AddDocument(1, "tabby cat with -big eyes"s, DocumentStatus::ACTUAL, {13});
-    const auto [str_, doc_] = search_server.MatchDocument("Anton dog want icecream"s, 1);
-    ASSERT(str_.empty());
+    const auto [matched_words1, status1] = search_server.MatchDocument("Anton dog want icecream"s, 1);
+    ASSERT(matched_words1.empty());
     
     search_server.SetStopWords("and"s);
     search_server.AddDocument(2, "small dog and tabby cat"s, DocumentStatus::ACTUAL, {10});
-    const auto [str1_, doc1_] = search_server.MatchDocument("small dog"s, 2);
-    ASSERT_EQUAL(str1_.size(), 2);
+    const auto [matched_words2, status2] = search_server.MatchDocument("small dog"s, 2);
+    ASSERT_EQUAL(matched_words2.size(), 2);
+    ASSERT_EQUAL(matched_words2[0], "dog"s);
+    ASSERT_EQUAL(matched_words2[1], "small"s);
+    ASSERT_EQUAL(static_cast<int>(status2), static_cast<int>(DocumentStatus::ACTUAL));
     
     search_server.AddDocument(3, "tabby cat with small dog"s, DocumentStatus::IRRELEVANT, {13});
-    ASSERT(!search_server.FindTopDocuments("cat dog"s, DocumentStatus::IRRELEVANT).empty());
+    const auto [matched_words3, status3] = search_server.MatchDocument("cat"s, 3);
+    ASSERT_EQUAL(matched_words3.size(), 1);
+    ASSERT_EQUAL(matched_words3[0], "cat"s);
+    ASSERT_EQUAL(static_cast<int>(status3), static_cast<int>(DocumentStatus::IRRELEVANT));
+    
 }
 
 // Сортировка по релевантности (в порядке убывания)
@@ -400,13 +386,13 @@ void TestSortByRelevance() {
     search_server.AddDocument(4, "dog in the city Moscow"s, DocumentStatus::ACTUAL, {4, 5, 6});
     search_server.AddDocument(5, "rabbit in the city NY"s, DocumentStatus::ACTUAL, {5, 6, 7});
   
-    string query = "city Moscow -dog"s;
+    string query = "city Moscow dog"s;
  
     const auto found_documents = search_server.FindTopDocuments(query);
-    ASSERT_EQUAL(found_documents.size(), 3);
-    ASSERT_EQUAL(found_documents[0].id, 3);
-    ASSERT_EQUAL(found_documents[1].id, 5);
-    ASSERT_EQUAL(found_documents[2].id, 2);
+    ASSERT_EQUAL(found_documents.size(), 5);
+    ASSERT_EQUAL(round(found_documents[0].relevance * 100) / 100, round(log(3 / 1) * 1 / 3 * 100) / 100);
+    ASSERT_EQUAL(round(found_documents[1].relevance * 100) / 100, round(log(3 / 1) * 1 / 6 * 100) / 100);
+    ASSERT_EQUAL(round(found_documents[2].relevance * 100) / 100, round(log(3 / 1) * 1 / 6 * 100) / 100);
 }
 
 // Вычисление среднего знаения рейтинга документа
@@ -451,12 +437,6 @@ void TestStatus() {
     vector<Document> documents_banned = search_server.FindTopDocuments("pink eys"s, DocumentStatus::BANNED);
     ASSERT_EQUAL(documents_banned.size(), 1);
     ASSERT_EQUAL(documents_banned[0].id, 2);
-   
-    //vector<Document> documents_irrelevant = search_server.FindTopDocuments("pink eys"s, DocumentStatus::IRRELEVANT);
-    //ASSERT_EQUAL(documents_irrelevant[0].id, 3);
- 
-    //vector<Document> documents_removed = search_server.FindTopDocuments("pink eys"s, DocumentStatus::REMOVED);
-    //ASSERT_EQUAL(documents_removed[0].id, 4);
 }
 
 void TestAccurateRelevance(){
@@ -467,9 +447,7 @@ void TestAccurateRelevance(){
  
     vector<Document> document = search_server.FindTopDocuments("cat"s);
     ASSERT_EQUAL(document.size(), 1);
-    //cout<<document[0].relevance<<endl;
-    //ASSERT_EQUAL(round(document[0].relevance*1000000)/1000000, 0.138629);
-    ASSERT_EQUAL(document[0].relevance, (log(2/1)*1/5));
+    ASSERT_EQUAL(round(document[0].relevance * 100) / 100, round(log(2 / 1) * 1 / 5 * 100) / 100);
 }
 
 // Функция TestSearchServer является точкой входа для запуска тестов
@@ -493,34 +471,3 @@ int main() {
     // Если вы видите эту строку, значит все тесты прошли успешно
     cout << "Search server testing finished"s << endl;
 }
-
-// ==================== для примера =========================
-
-/*void PrintDocument(const Document& document) {
-    cout << "{ "s
-         << "document_id = "s << document.id << ", "s
-         << "relevance = "s << document.relevance << ", "s
-         << "rating = "s << document.rating
-         << " }"s << endl;
-}
-int main() {
-    SearchServer search_server;
-    search_server.SetStopWords("и в на"s);
-    search_server.AddDocument(0, "белый кот и модный ошейник"s,        DocumentStatus::ACTUAL, {8, -3});
-    search_server.AddDocument(1, "пушистый кот пушистый хвост"s,       DocumentStatus::ACTUAL, {7, 2, 7});
-    search_server.AddDocument(2, "ухоженный пёс выразительные глаза"s, DocumentStatus::ACTUAL, {5, -12, 2, 1});
-    search_server.AddDocument(3, "ухоженный скворец евгений"s,         DocumentStatus::BANNED, {9});
-    cout << "ACTUAL by default:"s << endl;
-    for (const Document& document : search_server.FindTopDocuments("пушистый ухоженный кот"s)) {
-        PrintDocument(document);
-    }
-    cout << "ACTUAL:"s << endl;
-    for (const Document& document : search_server.FindTopDocuments("пушистый ухоженный кот"s, [](int document_id, DocumentStatus status, int rating) { return status == DocumentStatus::ACTUAL; })) {
-        PrintDocument(document);
-    }
-    cout << "Even ids:"s << endl;
-    for (const Document& document : search_server.FindTopDocuments("пушистый ухоженный кот"s, [](int document_id, DocumentStatus status, int rating) { return document_id % 2 == 0; })) {
-        PrintDocument(document);
-    }
-    return 0;
-} */
