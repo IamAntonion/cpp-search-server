@@ -246,7 +246,7 @@ private:
    ASSERT, ASSERT_EQUAL, ASSERT_EQUAL_HINT, ASSERT_HINT и RUN_TEST
 */
 template <typename T>
-void AssertImpl(const T expr, const string& expr_str, const string& file, const string& func, const int& line, const string& hint){
+void AssertImpl(const T& expr, const string& expr_str, const string& file, const string& func, const int& line, const string& hint){
     if(!expr){
         cout << boolalpha;
         cout << file << "("s << line << "): "s << func << ": "s;
@@ -263,7 +263,7 @@ void AssertImpl(const T expr, const string& expr_str, const string& file, const 
 #define ASSERT_HINT(expr, hint) AssertImpl((expr), #expr, __FILE__, __FUNCTION__, __LINE__, (hint))
 
 template <typename T, typename U>
-void AssertEqualImpl(const T t, const U u, const string& t_str, const string& u_str, const string& file, const string& func, const int& line, const string& hint){
+void AssertEqualImpl(const T& t, const U& u, const string& t_str, const string& u_str, const string& file, const string& func, const int& line, const string& hint){
     if (t != u) {
         cout << boolalpha;
         cout << file << "("s << line << "): "s << func << ": "s;
@@ -281,7 +281,7 @@ void AssertEqualImpl(const T t, const U u, const string& t_str, const string& u_
 #define ASSERT_EQUAL_HINT(a, b, hint) AssertEqualImpl((a), (b), #a, #b, __FILE__, __FUNCTION__, __LINE__, (hint))
 
 template <typename T>
-void RunTestImpl (const T t, const string& t_str) {
+void RunTestImpl (const T& t, const string& t_str) {
     t();
     cerr << t_str << " OK"s << endl;
 }
