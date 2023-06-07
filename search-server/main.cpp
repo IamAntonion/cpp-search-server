@@ -450,7 +450,7 @@ void TestAccurateRelevance(){
     vector<Document> document = search_server.FindTopDocuments("cat"s);
     ASSERT_EQUAL(document.size(), 1);
     // |expected_relevance - actual_relevance| < RELEVANCE_DIFFERENCE
-    ASSERT(abs((round(document[0].relevance * 1000000) / 1000000) - (round(document[0].relevance * 1000000) / 1000000)) < RELEVANCE_DIFFERENCE);
+    ASSERT(abs((round(log(2 / 1) * 1 / 5 * 1000000) / 1000000) - (round(document[0].relevance * 1000000) / 1000000)) < RELEVANCE_DIFFERENCE);
 }
 
 // Функция TestSearchServer является точкой входа для запуска тестов
