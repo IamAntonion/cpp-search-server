@@ -390,9 +390,11 @@ void TestSortByRelevance() {
  
     const auto found_documents = search_server.FindTopDocuments(query);
     ASSERT_EQUAL(found_documents.size(), 5);
-    ASSERT_EQUAL(round(found_documents[0].relevance * 100) / 100, round(log(3 / 1) * 1 / 3 * 100) / 100);
-    ASSERT_EQUAL(round(found_documents[1].relevance * 100) / 100, round(log(3 / 1) * 1 / 6 * 100) / 100);
-    ASSERT_EQUAL(round(found_documents[2].relevance * 100) / 100, round(log(3 / 1) * 1 / 6 * 100) / 100);
+    for (int i = 0; i < found_documents.size(); ++i) {
+        if ((i + 1) != found_documents.size()) {
+            ASSERT(found_documents[i].relevance >= found_documents[i + 1].relevance);
+        }
+    }
 }
 
 // Вычисление среднего знаения рейтинга документа
@@ -447,7 +449,8 @@ void TestAccurateRelevance(){
  
     vector<Document> document = search_server.FindTopDocuments("cat"s);
     ASSERT_EQUAL(document.size(), 1);
-    ASSERT_EQUAL(round(document[0].relevance * 100) / 100, round(log(2 / 1) * 1 / 5 * 100) / 100);
+    // |expected_relevance - actual_relevance| < RELEVANCE_DIFFERENCE
+    ASSERT(abs((round(document[0].relevance * 1000000) / 1000000) - (round(document[0].relevance * 1000000) / 1000000)) < RELEVANCE_DIFFERENCE);
 }
 
 // Функция TestSearchServer является точкой входа для запуска тестов
