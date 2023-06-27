@@ -60,6 +60,13 @@ struct Document {
     double relevance = 0.0;
     int rating = 0;
 };
+
+ostream& operator<<(ostream& out, const Document& document) {
+    out << "{ document_id = "s << document.id 
+        << ", relevance = "s << document.relevance 
+        << ", rating = "s << document.rating << " }"s;
+    return out;
+}
  
 template <typename StringContainer>
 set<string> MakeUniqueNonEmptyStrings(const StringContainer& strings) {
@@ -302,30 +309,89 @@ private:
     }
 };
 
+template <typename Iterator>
+class IteratorRange {
+public:
+    IteratorRange(Iterator begin, Iterator end)
+        : first_(begin)
+        , last_(end)
+        , size_(distance(first_, last_)) {
+    }
+ 
+    Iterator begin() const {
+        return first_;
+    }
+ 
+    Iterator end() const {
+        return last_;
+    }
+ 
+    size_t size() const {
+        return size_;
+    }
+ 
+private:
+    Iterator first_, last_;
+    size_t size_;
+};
+
+template <typename Iterator>
+ostream& operator<<(ostream& out, const IteratorRange<Iterator>& range) {
+    for (Iterator it = range.begin(); it != range.end(); ++it) {
+        out << *it;
+    }
+    return out;
+}
+
+template <typename Iterator>
+class Paginator {
+public:
+    Paginator(Iterator begin, Iterator end, size_t page_size) {
+        for (size_t left = distance(begin, end); left > 0;) {
+            const size_t current_page_size = min(page_size, left);
+            const Iterator current_page_end = next(begin, current_page_size);
+            pages_.push_back({begin, current_page_end});
+ 
+            left -= current_page_size;
+            begin = current_page_end;
+        }
+    }
+ 
+    auto begin() const {
+        return pages_.begin();
+    }
+ 
+    auto end() const {
+        return pages_.end();
+    }
+ 
+    size_t size() const {
+        return pages_.size();
+    }
+ 
+private:
+    vector<IteratorRange<Iterator>> pages_;
+};
+
 // ==================== для примера =========================
-void PrintDocument(const Document& document) {
-    cout << "{ "s
-         << "document_id = "s << document.id << ", "s
-         << "relevance = "s << document.relevance << ", "s
-         << "rating = "s << document.rating << " }"s << endl;
+template <typename Container>
+auto Paginate(const Container& c, size_t page_size) {
+    return Paginator(begin(c), end(c), page_size);
 }
+
 int main() {
-    SearchServer search_server("and in on wi\x17th at a"s);
- 
-    search_server.AddDocument(-1, "fluffy animals and feathered bird"s, DocumentStatus::ACTUAL, { -7, 1, 7, -1});
-    search_server.AddDocument(1, "fluffy animals and feathered bird"s, DocumentStatus::ACTUAL, { 3, 5 });
-    search_server.AddDocument(2, "a bird eats grain with a cheerful cat"s, DocumentStatus::ACTUAL, { 1, 2, 3 });
-    search_server.AddDocument(3, "a bird eat\x17s grain with a cheerful dog"s, DocumentStatus::ACTUAL, { -1, -2, -3 });
-    search_server.AddDocument(4, "bird and dog are good animals"s, DocumentStatus::ACTUAL, { 1, 1, 1 });
- 
-    search_server.FindTopDocuments("fluffy -animals"s);
-    search_server.FindTopDocuments("--fluffy animals"s);
-    search_server.FindTopDocuments("animals -"s);
-    search_server.FindTopDocuments("-"s);
- 
-    search_server.MatchDocument("good animals"s, 4);
-    search_server.MatchDocument("fluffy --animals"s, 1);
-    search_server.MatchDocument("-feathered bird"s, 1);
-    search_server.MatchDocument("bird dog -"s, 4);
-    search_server.MatchDocument("bird - dog"s, 14);
-}
+    SearchServer search_server("and with"s);
+    search_server.AddDocument(1, "funny pet and nasty rat"s, DocumentStatus::ACTUAL, {7, 2, 7});
+    search_server.AddDocument(2, "funny pet with curly hair"s, DocumentStatus::ACTUAL, {1, 2, 3});
+    search_server.AddDocument(3, "big cat nasty hair"s, DocumentStatus::ACTUAL, {1, 2, 8});
+    search_server.AddDocument(4, "big dog cat Vladislav"s, DocumentStatus::ACTUAL, {1, 3, 2});
+    search_server.AddDocument(5, "big dog hamster Borya"s, DocumentStatus::ACTUAL, {1, 1, 1});
+    const auto search_results = search_server.FindTopDocuments("curly dog"s);
+    int page_size = 2;
+    const auto pages = Paginate(search_results, page_size);
+    // Выводим найденные документы по страницам
+    for (auto page = pages.begin(); page != pages.end(); ++page) {
+        cout << *page << endl;
+        cout << "Page break"s << endl;
+    }
+} 
