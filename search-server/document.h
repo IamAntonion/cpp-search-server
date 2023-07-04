@@ -1,6 +1,6 @@
 #pragma once
 #include <iostream>
- 
+
 struct Document {
     Document() = default;
     Document(int id, double relevance, int rating)
@@ -20,3 +20,4 @@ enum class DocumentStatus {
     REMOVED,
 };
 
+std::ostream& operator<<(std::ostream& out, const Document& document);
