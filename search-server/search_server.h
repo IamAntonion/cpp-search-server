@@ -10,6 +10,7 @@
 #include <vector>
 #include "read_input_functions.h"
 #include "string_processing.h" 
+#include "document.h"
  
 using namespace std::string_literals;
  
@@ -34,8 +35,10 @@ private:
         int rating;
         DocumentStatus status;
     };
+    
     const double EPSILON = 1e-6;
     const int MAX_RESULT_DOCUMENT_COUNT = 5;
+    
     const std::set<std::string> stop_words_;
     std::map<std::string, std::map<int, double>> word_to_document_freqs_;
     std::map<int, DocumentData> documents_;

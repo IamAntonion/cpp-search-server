@@ -24,7 +24,7 @@ std::vector<Document> RequestQueue::AddFindRequest(const std::string& raw_query,
     std::vector<Document> helper = search_request.FindTopDocuments(raw_query, document_predicate);
  
     QueryResult query;
-    query.query_result = (helper.empty()==false);
+    query.query_result = (helper.empty() == false);
  
     if (!(requests_.size() < min_in_day_)){
         requests_.pop_front();
