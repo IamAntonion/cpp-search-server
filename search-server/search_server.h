@@ -8,6 +8,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <execution>
 #include "read_input_functions.h"
 #include "string_processing.h"
 #include "document.h"
@@ -36,6 +37,8 @@ public:
     const std::map<std::string, double>& GetWordFrequencies(int document_id) const;
     
     void RemoveDocument(int document_id);
+    void RemoveDocument(const std::execution::sequenced_policy&, int document_id);
+    void RemoveDocument(const std::execution::parallel_policy&, int document_id);
     
     std::tuple<std::vector<std::string>, DocumentStatus> MatchDocument(const std::string& raw_query, int document_id) const;
  

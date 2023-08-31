@@ -42,18 +42,43 @@ const std::map<std::string, double>& SearchServer::GetWordFrequencies(int docume
     static const std::map<std::string, double> emptyes;
     return (!ids_of_docs_to_word_freqs_.count(document_id)) ? emptyes : ids_of_docs_to_word_freqs_.at(document_id);
 }
- 
+
 void SearchServer::RemoveDocument(int document_id) {
-    if (document_ids_.find(document_id) != document_ids_.end()) {
-        for (auto& [word, _] : ids_of_docs_to_word_freqs_[document_id]) {
-            auto erase_word = word_to_document_freqs_[word].find(document_id);
-            word_to_document_freqs_[word].erase(erase_word);
-        } 
-    }
+    RemoveDocument(std::execution::seq, document_id);
+}
+
+void SearchServer::RemoveDocument(const std::execution::sequenced_policy&, int document_id) {
+    auto helper = std::find(document_ids_.begin(), 
+                            document_ids_.end(), 
+                            document_id);
     
+    if (helper == document_ids_.end()) {
+        return;
+    } else {
+        document_ids_.erase(helper);
+    }
+        
     documents_.erase(document_id);
-    document_ids_.erase(document_id);
-    ids_of_docs_to_word_freqs_.erase(document_id);
+    std::for_each(word_to_document_freqs_.begin(), 
+                  word_to_document_freqs_.end(), 
+                  [&](auto& helper) {
+                      helper.second.erase(document_id); 
+                  });
+}
+
+void SearchServer::RemoveDocument(const std::execution::parallel_policy&, int document_id) {
+    auto helper = std::find(std::execution::par, 
+                            document_ids_.begin(), 
+                            document_ids_.end(), 
+                            document_id);
+    
+    if (helper == document_ids_.end()) {
+        return;
+    } else {
+        document_ids_.erase(helper);
+    }
+ 
+    documents_.erase(document_id);
 }
  
 std::tuple<std::vector<std::string>, DocumentStatus> SearchServer::MatchDocument(const std::string& raw_query, int document_id) const {
