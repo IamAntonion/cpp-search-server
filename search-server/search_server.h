@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 #include <execution>
+
 #include "read_input_functions.h"
 #include "string_processing.h"
 #include "document.h"

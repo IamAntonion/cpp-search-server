@@ -67,20 +67,36 @@ void SearchServer::RemoveDocument(const std::execution::sequenced_policy&, int d
 }
 
 void SearchServer::RemoveDocument(const std::execution::parallel_policy&, int document_id) {
-    auto helper = std::find(std::execution::par, 
-                            document_ids_.begin(), 
-                            document_ids_.end(), 
-                            document_id);
+    if (ids_of_docs_to_word_freqs_.count(document_id) == 0) return;
+    std::vector<const std::string*> helper(ids_of_docs_to_word_freqs_.at(document_id).size());
     
-    if (helper == document_ids_.end()) {
-        return;
-    } else {
-        document_ids_.erase(helper);
-    }
- 
-    documents_.erase(document_id);
+    std::transform(std::execution::par,
+                   ids_of_docs_to_word_freqs_[document_id].begin(),
+                   ids_of_docs_to_word_freqs_[document_id].end(),
+                   helper.begin(),
+                   [] (const auto& m){
+                       return &m.first;
+                   });
+    
+    /*std::for_each(std::execution::par,
+                   word_to_document_freqs_.begin(), 
+                   word_to_document_freqs_.end(), 
+                   [&](auto& m) { 
+                       m.second.erase(document_id);
+                   });*/
+    
+    std::for_each(std::execution::par,
+                   helper.begin(), 
+                   helper.end(), 
+                   [&](auto m) { 
+                       word_to_document_freqs_[*m].erase(document_id);
+                   });
+    //////word_to_document_freqs_ stores map<string, map<int, double>>
+    documents_.erase(document_id); // del map<int,DocumentData>
+    document_ids_.erase(document_id); // del set<int>
+    ids_of_docs_to_word_freqs_.erase(document_id); // del map<int,map<string,double>>
 }
- 
+  //word_to_document_freqs_[m] helper
 std::tuple<std::vector<std::string>, DocumentStatus> SearchServer::MatchDocument(const std::string& raw_query, int document_id) const {
     const auto query = ParseQuery(raw_query);
     std::vector<std::string> matched_words;
