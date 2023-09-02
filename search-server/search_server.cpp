@@ -78,25 +78,18 @@ void SearchServer::RemoveDocument(const std::execution::parallel_policy&, int do
                        return &m.first;
                    });
     
-    /*std::for_each(std::execution::par,
-                   word_to_document_freqs_.begin(), 
-                   word_to_document_freqs_.end(), 
-                   [&](auto& m) { 
-                       m.second.erase(document_id);
-                   });*/
-    
     std::for_each(std::execution::par,
                    helper.begin(), 
                    helper.end(), 
                    [&](auto m) { 
                        word_to_document_freqs_[*m].erase(document_id);
                    });
-    //////word_to_document_freqs_ stores map<string, map<int, double>>
-    documents_.erase(document_id); // del map<int,DocumentData>
-    document_ids_.erase(document_id); // del set<int>
-    ids_of_docs_to_word_freqs_.erase(document_id); // del map<int,map<string,double>>
+    
+    documents_.erase(document_id);
+    document_ids_.erase(document_id);
+    ids_of_docs_to_word_freqs_.erase(document_id);
 }
-  //word_to_document_freqs_[m] helper
+
 std::tuple<std::vector<std::string>, DocumentStatus> SearchServer::MatchDocument(const std::string& raw_query, int document_id) const {
     const auto query = ParseQuery(raw_query);
     std::vector<std::string> matched_words;
@@ -117,6 +110,48 @@ std::tuple<std::vector<std::string>, DocumentStatus> SearchServer::MatchDocument
             break;
         }
     }
+    return {matched_words, documents_.at(document_id).status};
+}
+
+std::tuple<std::vector<std::string>, DocumentStatus> SearchServer::MatchDocument(std::execution::sequenced_policy policy,
+                                                                                 const std::string& raw_query, int document_id) const {
+    return MatchDocument(raw_query, document_id);
+}
+
+std::tuple<std::vector<std::string>, DocumentStatus> SearchServer::MatchDocument(std::execution::parallel_policy policy,
+                                                                                 const std::string& raw_query, const int& document_id) const {
+    if (documents_.find(document_id) == documents_.end()) throw std::out_of_range("Invalid document_id");
+    
+    const auto query = ParseQuery(raw_query);
+    std::vector<std::string> matched_words;
+    bool is_minus_word_found = false;
+    
+    auto word_to_document_freqs_end = word_to_document_freqs_.end();
+    
+    std::for_each(std::execution::par, query.plus_words.begin(), query.plus_words.end(), [&](const std::string& word) {
+        if (is_minus_word_found) {
+            return;
+        }
+        auto it = word_to_document_freqs_.find(word);
+        if (it != word_to_document_freqs_end && it->second.count(document_id) > 0) {
+            matched_words.push_back(word);
+        }
+    });
+    
+    std::for_each(std::execution::par, query.minus_words.begin(), query.minus_words.end(), [&](const std::string& word) {
+        if (is_minus_word_found) {
+            return;
+        }
+        auto it = word_to_document_freqs_.find(word);
+        if (it != word_to_document_freqs_end && it->second.count(document_id) > 0) {
+            is_minus_word_found = true;
+        }
+    });
+
+    if (is_minus_word_found) {
+        matched_words.clear();
+    }
+
     return {matched_words, documents_.at(document_id).status};
 }
  

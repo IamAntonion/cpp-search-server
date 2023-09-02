@@ -42,6 +42,10 @@ public:
     void RemoveDocument(const std::execution::parallel_policy&, int document_id);
     
     std::tuple<std::vector<std::string>, DocumentStatus> MatchDocument(const std::string& raw_query, int document_id) const;
+    std::tuple<std::vector<std::string>, DocumentStatus> MatchDocument(std::execution::sequenced_policy policy, const std::string& raw_query,
+                                                                       int document_id) const;
+    std::tuple<std::vector<std::string>, DocumentStatus> MatchDocument(std::execution::parallel_policy policy, const std::string& raw_query,
+                                                                       const int& document_id) const;
  
 private:
     struct DocumentData {

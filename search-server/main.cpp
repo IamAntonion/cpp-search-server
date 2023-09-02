@@ -1,4 +1,5 @@
 #include "search_server.h"
+#include "process_queries.h"
 
 #include <iostream>
 #include <string>
