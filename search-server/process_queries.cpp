@@ -12,7 +12,7 @@ std::vector<std::vector<Document>> ProcessQueries(const SearchServer& search_ser
                    queries.begin(), 
                    queries.end(), 
                    helper.begin(),
-                   [&search_server](std::string query){
+                   [&search_server](auto query){
                         return search_server.FindTopDocuments(query);
                     });
     return helper;
@@ -29,7 +29,7 @@ std::vector<Document> ProcessQueriesJoined(const SearchServer& search_server,
                                      lhs.insert(lhs.end(), rhs.begin(), rhs.end());
                                      return lhs;
                                  },             
-                                 [&search_server](const std::string& query){ 
+                                 [&search_server](auto& query){ 
                                      return search_server.FindTopDocuments(query); 
                                  });
 }
