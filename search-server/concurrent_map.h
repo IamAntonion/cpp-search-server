@@ -12,8 +12,6 @@
 #include "log_duration.h"
 #include "test_framework.h"
  
-using namespace std::string_literals;
- 
 template <typename Key, typename Value>
 class ConcurrentMap {
 private:
@@ -25,7 +23,7 @@ private:
     std::vector<Bucket> bucket_;
     
  public:
-    static_assert(std::is_integral_v<Key>, "ConcurrentMap supports only integer keys"s);
+    static_assert(std::is_integral_v<Key>, "ConcurrentMap supports only integer keys");
  
     struct Access {
         std::lock_guard<std::mutex> lock_guard_mutex;
@@ -56,7 +54,7 @@ private:
         return result;
     }
     
-    void erase(const Key& key){    
+    void Erase(const Key& key){    
       auto& bucket = bucket_[static_cast<uint64_t>(key) % bucket_.size()];
         std::lock_guard lock_guard_mutex(bucket.mutex_);
         bucket.map_.erase(key);
